@@ -23,6 +23,7 @@ from . import services
 # Package metadata and core exports
 __all__ = [
     # Core components
+    "app",
     "settings",
     "get_db", 
     "SessionLocal",
