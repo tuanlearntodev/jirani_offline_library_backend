@@ -8,3 +8,8 @@ class Role(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, unique=True, index=True, nullable=False)
     accounts = relationship("Account", secondary="account_roles", back_populates="roles")
+
+    '''
+    this represents what roles that users can have
+    
+    '''

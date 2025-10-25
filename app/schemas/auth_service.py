@@ -7,30 +7,30 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.models.account import Account
 
-# Password hashing setup
+# password hashing setup
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# Token expires after 1 hour
+# token expires after 1 hour
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
 class AuthService:
-    """Handles password checking and JWT creation"""
+    """handles password checking and JWT creation"""
     
     @staticmethod
     def verify_password(plain_password: str, hashed_password: str) -> bool:
-        """Check if password is correct"""
+        """check if password is correct"""
         return pwd_context.verify(plain_password, hashed_password)
     
     @staticmethod
     def get_password_hash(password: str) -> str:
-        """Hash a password (when creating new user)"""
+        """hash a password """
         return pwd_context.hash(password)
     
     @staticmethod
     def authenticate_user(db: Session, username: str, password: str) -> Optional[Account]:
         """
-        Check username and password.
-        Returns the user if correct, None if wrong.
+        check username and password.
+        returns the user if correct, none if wrong.
         """
         # Find user
         account = db.query(Account).filter(
@@ -49,7 +49,7 @@ class AuthService:
     @staticmethod
     def create_access_token(data: dict) -> str:
         """
-        Create a JWT token that expires in 1 hour.
+        create a JWT token that expires in 1 hour.
         """
         to_encode = data.copy()
         expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -66,8 +66,8 @@ class AuthService:
     @staticmethod
     def create_token_for_user(account: Account) -> str:
         """
-        Create a JWT for a logged-in user.
-        Includes their ID, username, and roles.
+        create a JWT for a logged-in user.
+        includes their ID, username, and roles.
         """
         role_names = [role.name for role in account.roles]
         

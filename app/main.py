@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from app.database import engine, Base
 from app import models
-from app.routes import auth  # ← ADD THIS
+from app.routes import auth  
 
 app = FastAPI(
     title="Jirani Offline Library Backend",
@@ -9,10 +9,9 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Create database tables
 Base.metadata.create_all(bind=engine)
 
-# Add auth routes ← ADD THIS
+
 app.include_router(auth.router)
 
 @app.get("/")

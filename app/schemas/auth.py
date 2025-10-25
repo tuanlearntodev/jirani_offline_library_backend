@@ -1,15 +1,15 @@
 from pydantic import BaseModel
 from typing import List
 
-# What user sends when logging in
+# What user sends when logging in (username & password must be strings)
 class LoginRequest(BaseModel):
-    username: str
+    username: str 
     password: str
 
 # What we send back after login
 class Token(BaseModel):
-    access_token: str  # The JWT token
-    token_type: str = "bearer"
+    access_token: str  # returns jwt token
+    token_type: str = "bearer" #scheme for sending a token in HTTP requests
 
 # Info about a role
 class RoleSchema(BaseModel):

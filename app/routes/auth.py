@@ -13,9 +13,9 @@ async def login(
     db: Session = Depends(get_db)
 ):
     """
-    Login endpoint - give username/password, get JWT token back
+    login endpoint - give username/password, get JWT token back
     """
-    # Check username and password
+    # check username & password
     user = AuthService.authenticate_user(db, login_data.username, login_data.password)
     
     if not user:
@@ -25,7 +25,7 @@ async def login(
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    # Create JWT token
+ 
     access_token = AuthService.create_token_for_user(user)
     
     return Token(access_token=access_token, token_type="bearer")
