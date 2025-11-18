@@ -6,6 +6,7 @@ from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 from app.config import settings
 from app.models.account import Account
+from app.schemas.auth import SignUpRequest
 
 # password hashing setup
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -25,6 +26,34 @@ class AuthService:
     def get_password_hash(password: str) -> str:
         """hash a password """
         return pwd_context.hash(password)
+    
+    @staticmethod
+    def get_user_by_username(db: Session, username: str) -> Optional[Account]:
+        return db.query(Account).filter(Account.username == username).first()
+    
+    @staticmethod
+    def create_user(db: Session, signup_data: SignUpRequest) -> Account:
+        """
+        Create a new user account.
+        Hashes the password and saves to database.
+        """
+        # Hash the password
+        hashed_password = AuthService.get_password_hash(signup_data.password)
+        
+        # Create new account - match your Account model fields
+        new_account = Account(
+            username=signup_data.username,
+            hashed_password=hashed_password,
+            first_name="",  # Your model requires this
+            last_name="",   # Your model requires this
+            is_active=True
+        )
+        
+        db.add(new_account)
+        db.commit()
+        db.refresh(new_account)
+        
+        return new_account
     
     @staticmethod
     def authenticate_user(db: Session, username: str, password: str) -> Optional[Account]:
@@ -62,6 +91,7 @@ class AuthService:
             algorithm=settings.ALGORITHM
         )
         return encoded_jwt
+    
     
     @staticmethod
     def create_token_for_user(account: Account) -> str:
