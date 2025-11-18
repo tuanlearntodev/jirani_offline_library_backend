@@ -58,7 +58,7 @@ if not has_admin_role:
 else:
     print("Admin user already has admin role")
 
-print("\nSetup complete! You can now login with:")
+print("Setup complete! You can now login with:")
 print("   Username: admin")
 print("   Password: admin123")
 db.close()

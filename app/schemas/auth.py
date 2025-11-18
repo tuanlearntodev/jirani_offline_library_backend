@@ -1,10 +1,14 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List
 
 # What user sends when logging in (username & password must be strings)
 class LoginRequest(BaseModel):
     username: str 
     password: str
+
+class SignUpRequest(BaseModel):
+    username:str = Field(..., min_length = 4, max_length=50)
+    password: str = Field(..., min_length = 8)
 
 # What we send back after login
 class Token(BaseModel):
