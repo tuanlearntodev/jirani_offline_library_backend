@@ -16,7 +16,7 @@ def test_reset_password_flow():
     }
     
     response = requests.post(
-        f"{BASE_URL}/auth/login",
+        f"{BASE_URL}/auth/token",  # Changed from /auth/login
         json=teacher_login
     )
     
@@ -37,7 +37,7 @@ def test_reset_password_flow():
     }
     
     response = requests.post(
-        f"{BASE_URL}/auth/login",
+        f"{BASE_URL}/auth/token",  # Changed from /auth/login
         json=student_login_old
     )
     
@@ -71,7 +71,7 @@ def test_reset_password_flow():
     
     print("\n[Step 4] Trying student's OLD password (should fail)...")
     response = requests.post(
-        f"{BASE_URL}/auth/login",
+        f"{BASE_URL}/auth/token",  # Changed from /auth/login
         json=student_login_old
     )
     
@@ -87,7 +87,7 @@ def test_reset_password_flow():
     }
     
     response = requests.post(
-        f"{BASE_URL}/auth/login",
+        f"{BASE_URL}/auth/token",  # Changed from /auth/login
         json=student_login_new
     )
     

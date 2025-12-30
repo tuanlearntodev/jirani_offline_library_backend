@@ -11,7 +11,7 @@ class Role(Base):
 
     __table_args__ = (
         CheckConstraint(
-            "name IN ('admin, 'teacher', 'student')",
+            "name IN ('admin', 'teacher', 'student')",
             name = "checking_valid_role"
-        )
+        ),
     )  

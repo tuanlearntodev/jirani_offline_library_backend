@@ -68,7 +68,7 @@ async def reset_password(
 ):
     try:
      
-        updated_user = AuthService.reset_user_password(
+        updated_user = AuthService.reset_password(
             db,
             reset_password_data.username,      
             reset_password_data.new_password  

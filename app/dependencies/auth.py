@@ -1,16 +1,19 @@
 # app/dependencies/auth.py
 from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthCredentials
+from fastapi.security import HTTPBearer
+from fastapi.security import HTTPBearer
+from fastapi.security.http import HTTPAuthorizationCredentials
 from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 from app.config import settings
 from app.database import get_db
 from app.models.account import Account
+from app.schemas.auth_service import AuthService
 
 security = HTTPBearer()
 
 async def get_current_user(
-    credentials: HTTPAuthCredentials = Depends(security),
+    credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db)
 ) -> Account:
 
@@ -37,7 +40,7 @@ async def get_current_user(
     except JWTError:
         raise credentials_exception
     
-    from app.schemas.auth_service import AuthService
+   
     user = AuthService.get_user_by_username(db, username)
     
     if user is None:
