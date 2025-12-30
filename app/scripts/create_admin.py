@@ -7,7 +7,7 @@ from app.database import SessionLocal
 from app.models.account import Account
 from app.models.role import Role
 from app.models.account_role import AccountRole
-from app.services.auth_service import AuthService
+from app.schemas.auth_service import AuthService
 
 db = SessionLocal()
 

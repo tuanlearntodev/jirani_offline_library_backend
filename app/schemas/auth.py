@@ -8,14 +8,20 @@ class LoginRequest(BaseModel):
 
 class SignUpRequest(BaseModel):
     username:str = Field(..., min_length = 4, max_length=50)
-    password: str = Field(..., min_length = 8)
+    password: str = Field(..., min_length = 15)
 
-# What we send back after login
+class ResetPasswordRequest(BaseModel):
+    username: str
+    new_password: str = Field(..., min_length=15)
+
+class ChangePasswordRequest(BaseModel):
+    username: str
+    new_password: str = Field(..., min_length=15)
+    
 class Token(BaseModel):
     access_token: str  # returns jwt token
     token_type: str = "bearer" #scheme for sending a token in HTTP requests
 
-# Info about a role
 class RoleSchema(BaseModel):
     id: int
     name: str
@@ -23,7 +29,6 @@ class RoleSchema(BaseModel):
     class Config:
         from_attributes = True
 
-# User info with roles
 class UserWithRoles(BaseModel):
     id: int
     username: str
