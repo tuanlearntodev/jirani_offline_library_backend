@@ -11,8 +11,8 @@ from app.schemas.auth import SignUpRequest
 # password hashing setup
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# token expires after 1 hour
-ACCESS_TOKEN_EXPIRE_MINUTES = 60
+# token expires after 2 hours for now
+ACCESS_TOKEN_EXPIRE_MINUTES = 120
 
 class AuthService:
     """handles password checking and JWT creation"""
@@ -40,12 +40,11 @@ class AuthService:
         # Hash the password
         hashed_password = AuthService.get_password_hash(signup_data.password)
         
-        # Create new account - match your Account model fields
         new_account = Account(
             username=signup_data.username,
             hashed_password=hashed_password,
-            first_name="",  # Your model requires this
-            last_name="",   # Your model requires this
+            first_name="", 
+            last_name="",   
             is_active=True
         )
         
@@ -108,3 +107,18 @@ class AuthService:
         }
         
         return AuthService.create_access_token(token_data)
+    
+    @staticmethod
+    def reset_password(db: Session, username: str, new_password: str) -> Account:
+        user = db.query(Account). filter(Account.username == username).one_or_none()
+
+        if not user: 
+            raise ValueError("user not found")
+        
+        hashed_password = AuthService.get_password_hash(new_password)
+
+        user.hashed_password = hashed_password
+        db.commit()
+        db.refresh(user)
+
+        return user
