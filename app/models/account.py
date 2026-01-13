@@ -1,4 +1,4 @@
-from app.database import Base
+from app.database import Base 
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, func
 from sqlalchemy.orm import relationship
 
@@ -14,3 +14,4 @@ class Account(Base):
 
 
     roles = relationship("Role", secondary="account_roles", back_populates="accounts")
+
