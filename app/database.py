@@ -14,12 +14,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
 
-# Dependency to get database session
 def get_db():
-    """
-    Dependency function to get database session.
-    Ensures proper cleanup of database connections.
-    """
     db = SessionLocal()
     try:
         yield db

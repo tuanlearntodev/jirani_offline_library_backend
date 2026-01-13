@@ -34,3 +34,9 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+
+# Uploads - ignore contents but keep folder structure
+uploads/books/*
+uploads/covers/*
+!uploads/books/.gitkeep
+!uploads/covers/.gitkeep

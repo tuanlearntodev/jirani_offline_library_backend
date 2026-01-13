@@ -1,10 +1,11 @@
 from app.database import Base
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship
 
-class Role(Base):
-    __tablename__ = "roles"
-    
+class Tag(Base):
+    __tablename__ = "tags"
+
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, unique=True, index=True, nullable=False)
-    accounts = relationship("Account", secondary="account_roles", back_populates="roles")
+
+    books = relationship("Book", secondary="book_tags", back_populates="tags")

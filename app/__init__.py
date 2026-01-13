@@ -17,7 +17,7 @@ from .database import get_db, SessionLocal, Base
 from . import models
 from . import schemas
 from . import repositories
-from . import routes
+from . import api
 from . import services
 
 # Package metadata and core exports
@@ -33,7 +33,7 @@ __all__ = [
     "models",
     "schemas", 
     "repositories",
-    "routes",
+    "api",
     "services",
     
     # Metadata
