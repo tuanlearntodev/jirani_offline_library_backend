@@ -23,7 +23,7 @@ class BookRepo:
             for tag_in in tag_data:
                 tag = self.db_session.query(Tag).filter(Tag.name.ilike(tag_in.name)).first()
                 if not tag:
-                    tag = Tag(name=tag_in.name.strip().tolower())
+                    tag = Tag(name=tag_in.name.strip().lower())
                 new_book.tags.append(tag)
 
         try:
@@ -36,6 +36,6 @@ class BookRepo:
             raise Exception(f"Failed to create book in database: {str(e)}")
     
     def get_all_books(self) -> list[Book]:
-        return self.db_session.query(Book).all()
+        return self.db_session.query(Book).options(joinedload(Book.tags)).all()
     
     
