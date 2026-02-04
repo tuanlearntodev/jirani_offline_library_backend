@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 from app.database import engine, Base
-from app.api import auth, book_router
+from app.api import auth_router, book_router
 from app import settings  # Import models to register them with Base
 
 
@@ -27,7 +27,7 @@ app = FastAPI(
 # Mount covers directory for public access (books require auth)
 app.mount("/static", StaticFiles(directory=settings.COVER_DIR), name="static")
 
-app.include_router(auth.router)
+app.include_router(auth_router.router)
 app.include_router(book_router.router)
 
 @app.get("/")

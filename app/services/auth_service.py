@@ -6,7 +6,7 @@ from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 from app.config import settings
 from app.models.account import Account
-from app.schemas.auth import SignUpRequest
+from app.schemas.auth_schema import SignUpRequest
 
 # password hashing setup
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

@@ -38,4 +38,38 @@ class BookRepo:
     def get_all_books(self) -> list[Book]:
         return self.db_session.query(Book).options(joinedload(Book.tags)).all()
     
+    def delete_book(self, book_uid: str) -> None:
+        book = self.get_book_by_uid(book_uid)
+        if not book:
+            raise ValueError(f"Book with UID {book_uid} does not exist")
+        self.db_session.delete(book)
+        self.db_session.commit()
+        
+    def update_book(self, book_uid: str, book_update: BookCreate) -> Book:
+        book = self.get_book_by_uid(book_uid)
+        if not book:
+            raise ValueError(f"Book with UID {book_uid} does not exist")
+        
+        tag_data = book_update.tags
+        book_dict = book_update.model_dump(exclude={"tags"})
+        
+        for key, value in book_dict.items():
+            setattr(book, key, value)
+        
+        if tag_data is not None:
+            book.tags.clear()
+            for tag_in in tag_data:
+                tag = self.db_session.query(Tag).filter(Tag.name.ilike(tag_in.name)).first()
+                if not tag:
+                    tag = Tag(name=tag_in.name.strip().lower())
+                book.tags.append(tag)
+        
+        try:
+            self.db_session.commit()
+            self.db_session.refresh(book)
+            return book
+        except Exception as e:
+            self.db_session.rollback()
+            raise Exception(f"Failed to update book in database: {str(e)}")
+    
     

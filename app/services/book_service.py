@@ -1,6 +1,6 @@
+from importlib.metadata import metadata
 from fastapi import UploadFile, HTTPException
 from pathlib import Path
-import shutil
 import uuid
 from typing import Optional
 from app.repositories import BookRepo
@@ -195,6 +195,124 @@ class BookService:
             raise HTTPException(
                 status_code=500,
                 detail=f"Failed to upload book: {str(e)}"
+            )
+    
+    async def update_book(self, book_uid: str, metadata: BookUpload, cover: Optional[UploadFile] = None) -> BookBase:
+        existing_book = self.book_repo.get_book_by_uid(book_uid)
+        if not existing_book:
+            raise HTTPException(status_code=404, detail="Book not found")
+        
+        # Update title if provided
+        if metadata.title and metadata.title.strip():
+            existing_book.title = metadata.title.strip()        
+        
+        # Handle cover update if provided
+        if cover and cover.filename:
+            # Delete old cover image if it exists
+            if existing_book.cover_path:
+                old_cover_path = self.cover_path / existing_book.cover_path
+                if old_cover_path.exists():
+                    try:
+                        old_cover_path.unlink()
+                    except Exception as e:
+                        print(f"Warning: Failed to delete old cover: {e}")
+            
+            # Validate cover extension
+            if '.' not in cover.filename:
+                raise HTTPException(status_code=400, detail="Cover file must have an extension")
+            
+            cover_extension = cover.filename.split('.')[-1].lower()
+            if cover_extension not in settings.ALLOWED_IMAGE_EXTENSIONS:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid cover type '.{cover_extension}'. Allowed: {', '.join(settings.ALLOWED_IMAGE_EXTENSIONS)}"
+                )
+            
+            # Read and validate cover header
+            cover_header = await cover.read(8192)  # Read first 8KB
+            if len(cover_header) == 0:
+                raise HTTPException(status_code=400, detail="Cover file is empty")
+            
+            # Validate cover content type
+            self._validate_image_content(cover_header, cover_extension)
+            
+            # Save new cover file while checking size
+            cover_name = f"{book_uid}.{cover_extension}"
+            cover_path = self.cover_path / cover_name
+            total_cover_size = len(cover_header)
+            
+            with cover_path.open("wb") as buffer:
+                # Write the header we already read
+                buffer.write(cover_header)
+                
+                # Stream the rest of the file
+                while True:
+                    chunk = await cover.read(8192)
+                    if not chunk:
+                        break
+                    total_cover_size += len(chunk)
+                    if total_cover_size > self.max_cover_size:
+                        raise HTTPException(
+                            status_code=400,
+                            detail=f"Cover too large ({total_cover_size / (1024*1024):.2f}MB). Max: {self.max_cover_size / (1024*1024):.0f}MB"
+                        )
+                    buffer.write(chunk)
+            
+            existing_book.cover_path = cover_name
+        if metadata.tags is not None:
+            all_tag_names = {t.name.lower(): t for t in metadata.tags}
+            final_tags = list(all_tag_names.values())
+        else:
+            final_tags = [TagCreate(name=t.name) for t in existing_book.tags]
+        book_updated = BookCreate(
+            title=existing_book.title,  
+            uid=existing_book.uid,
+            file_type=existing_book.file_type,
+            extension=existing_book.extension,
+            file_path=existing_book.file_path,
+            cover_path=existing_book.cover_path,
+            tags=final_tags
+        )
+        # Save updates to database
+        try:    
+            updated_book = self.book_repo.update_book(book_uid, book_updated)
+            return BookBase.model_validate(updated_book)
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to update book: {str(e)}"
+            )
+            
+            
+    def delete_book(self, book_uid: str) -> None:
+        existing_book = self.book_repo.get_book_by_uid(book_uid)
+        if not existing_book:
+            raise HTTPException(status_code=404, detail="Book not found")
+        
+        # Delete book file
+        book_path = self.upload_path / existing_book.file_path
+        if book_path.exists():
+            try:
+                book_path.unlink()
+            except Exception as e:
+                print(f"Warning: Failed to delete book file: {e}")
+        
+        # Delete cover file
+        if existing_book.cover_path:
+            cover_path = self.cover_path / existing_book.cover_path
+            if cover_path.exists():
+                try:
+                    cover_path.unlink()
+                except Exception as e:
+                    print(f"Warning: Failed to delete cover file: {e}")
+        
+        # Delete from database
+        try:
+            self.book_repo.delete_book(book_uid)
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to delete book: {str(e)}"
             )
     
     def _validate_book_content(self, content: bytes, extension: str):
