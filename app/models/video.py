@@ -7,7 +7,7 @@ class Video(Base):
     title = Column(String, nullable=False)
     description = Column(String, nullable = True)
     file_path = Column(String, nullable = False)
-
+    
  
    
 
