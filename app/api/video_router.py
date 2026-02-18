@@ -8,14 +8,26 @@ from fastapi.responses import StreamingResponse
 from app.database import get_db
 import uuid
 
-router = APIRouter(prefix="videos", tags=["videos"])
+router = APIRouter(prefix="/videos", tags=["videos"])
+
+@router.get("/", response_model=list[Video_View])
+def get_videos(db: Session = Depends(get_db)):
+    videos = db.query(Video).all()
+    result = []
+    for vid in videos:
+        result.append(
+            Video_View(
+                id=vid.id,
+                title=vid.title,
+                description=vid.description,
+                video_url=f"http://raspberrypi/{vid.file_path}"
+            ))
+    return result
 
 @router.post("/upload", response_model = Video_View) #response_model sends back data in form
 async def upload_file(
     file: UploadFile = File (...), 
     title: str=Form (...), description: str | None=Form(None),
-    file_path: str=Form(...),
-    video_type: str = Form(...),
     db: Session = Depends(get_db)
     ):# parameters are everything needed from client to create a correct SQLAlchemy object and store it in the database
 
@@ -28,22 +40,20 @@ async def upload_file(
     video = Video_Create(
         title=title,
         description = description,
-        video_type = "mp4",
         file_path = file_location
     )
 
     repo = Video_Repo(db)
     video_db = repo.create_video(video)
 
-    video_url = f"http://raspberrypi/{file_location}" 
-
     return Video_View(
         id = video_db.id,
-        title = video_db.title,
+        title=video_db.title,
         description = video_db.description,
-        video_url = video_url,
-        video_type = video_db.video_type
+         video_url=f"http://raspberrypi/{video_db.file_path}"
     )
+
+    
 
 @router.get("/stream/{video_id}")
 def stream_video(video_id: int, db: Session = Depends(get_db)):
@@ -59,5 +69,5 @@ def stream_video(video_id: int, db: Session = Depends(get_db)):
                     break
                 yield chunk
 
-    return StreamingResponse(iterfile(), media_type=f"video/{video.video_type}")
+    return StreamingResponse(iterfile(), media_type="video/mp4")
 
