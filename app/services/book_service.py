@@ -32,6 +32,25 @@ class BookService:
         books = self.book_repo.get_all_books()
         return [BookRead.model_validate(book) for book in books]
     
+    def search_books(
+        self,
+        title: Optional[str] = None,
+        tags: Optional[list[str]] = None,
+        file_type: Optional[str] = None,
+        extension: Optional[str] = None
+    ) -> list[BookBase]:
+        """
+        Dynamic search for books with multiple optional filters.
+        If no filters are provided, returns all books.
+        """
+        books = self.book_repo.search_books(
+            title=title,
+            tags=tags,
+            file_type=file_type,
+            extension=extension
+        )
+        return [BookBase.model_validate(book) for book in books]
+    
     @staticmethod
     def _file_name_generator(title: str, uid: str, extension: str) -> str:
         """Generate a safe filename from title, UID and extension"""

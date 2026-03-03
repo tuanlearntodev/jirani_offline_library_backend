@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 from app.database import engine, Base
-from app.api import auth_router, book_router
+from app.api import auth_router, book_router, tag_router, publisher_router
 from app import settings  # Import models to register them with Base
 
 
@@ -29,7 +29,9 @@ app.mount("/static", StaticFiles(directory=settings.COVER_DIR), name="static")
 
 app.include_router(auth_router.router)
 app.include_router(book_router.router)
+app.include_router(tag_router.router)
+app.include_router(publisher_router.router)
 
-@app.get("/")
+@antml:get("/")
 async def root():
     return {"message": "Welcome to Jirani Offline Library Backend"}

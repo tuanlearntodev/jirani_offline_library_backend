@@ -1,6 +1,8 @@
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import and_
 from app.models import Book, Tag
 from app.schemas.book_schema import BookCreate
+from typing import Optional
 
 class BookRepo:
     def __init__(self, db_session: Session):
@@ -72,4 +74,39 @@ class BookRepo:
             self.db_session.rollback()
             raise Exception(f"Failed to update book in database: {str(e)}")
     
-    
+    def search_books(
+        self,
+        title: Optional[str] = None,
+        tags: Optional[list[str]] = None,
+        file_type: Optional[str] = None,
+        extension: Optional[str] = None
+    ) -> list[Book]:
+        """
+        Dynamic search with multiple optional filters.
+        Filters are combined using AND logic.
+        """
+        query = self.db_session.query(Book).options(joinedload(Book.tags))
+        
+        # Apply filters dynamically
+        filters = []
+        
+        if title:
+            filters.append(Book.title.ilike(f"%{title}%"))
+        
+        if file_type:
+            filters.append(Book.file_type.ilike(f"%{file_type}%"))
+        
+        if extension:
+            filters.append(Book.extension.ilike(extension))
+        
+        # Apply all non-tag filters
+        if filters:
+            query = query.filter(and_(*filters))
+        
+        # Handle tag filtering separately (requires join)
+        if tags:
+            # Normalize tag names
+            normalized_tags = [tag.strip().lower() for tag in tags]
+            query = query.join(Book.tags).filter(Tag.name.in_(normalized_tags))
+        
+        return query.all()
