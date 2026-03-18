@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from app.models.video import Video
 from app.schemas.video_schema import Video_Create
+from datetime import datetime, timezone
 
 class Video_Repo:
     def __init__(self, db_session:Session ): # constructor
@@ -13,3 +14,10 @@ class Video_Repo:
         self.db_session.commit()
         self.db_session.refresh(new_video)
         return new_video
+    
+    def delete_video(self, video_id: int) -> Video: 
+        video = self.db_session.query(Video).filter(Video.id == video_id).first()
+        video.deleted_at = datetime.now(timezone.utc)
+        self.db_session.commit()
+        self.db_session.refresh(video)
+        return video
