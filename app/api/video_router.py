@@ -24,6 +24,11 @@ def get_videos(db: Session = Depends(get_db)):
             ))
     return result
 
+@router.delete("/{video_id}")
+def delete_videos(video_id: int, db: Session = Depends(get_db)):
+    repo = Video_Repo(db)
+    return repo.delete_video(video_id)
+
 @router.post("/upload", response_model = Video_View) #response_model sends back data in form
 async def upload_file(
     file: UploadFile = File (...), 
