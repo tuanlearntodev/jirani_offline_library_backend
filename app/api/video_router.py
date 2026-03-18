@@ -12,7 +12,7 @@ router = APIRouter(prefix="/videos", tags=["videos"])
 
 @router.get("/", response_model=list[Video_View])
 def get_videos(db: Session = Depends(get_db)):
-    videos = db.query(Video).all()
+    videos = db.query(Video).filter(Video.deleted_at==None).all()
     result = []
     for vid in videos:
         result.append(
@@ -58,7 +58,6 @@ async def upload_file(
          video_url=f"http://raspberrypi/{video_db.file_path}"
     )
 
-    
 
 @router.get("/stream/{video_id}")
 def stream_video(video_id: int, db: Session = Depends(get_db)):
