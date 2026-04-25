@@ -59,7 +59,7 @@ class BookService:
         
         return f"{clean_title}_{uid}.{extension}"
     
-    async def upload_book(self, metadata: BookUpload, file: UploadFile, cover: Optional[UploadFile] = None) -> BookBase:
+    async def upload_book(self, metadata: BookUpload, file: UploadFile, cover: Optional[UploadFile] = None, publisher_id: Optional[int] = None) -> BookBase:
         """Upload book and cover with validation and error handling"""
         if not metadata.title or not metadata.title.strip():
             # Get filename without extension: "lesson_1.pdf" -> "lesson_1"
@@ -191,7 +191,8 @@ class BookService:
                 extension=file_extension,
                 file_path=file_name,  # Store relative path, not absolute
                 cover_path=cover_name,  # Store relative path, not absolute
-                tags=final_tags
+                tags=final_tags,
+                publisher_id = publisher_id,
             )
             
             # Save to database
@@ -216,14 +217,17 @@ class BookService:
                 detail=f"Failed to upload book: {str(e)}"
             )
     
-    async def update_book(self, book_uid: str, metadata: BookUpload, cover: Optional[UploadFile] = None) -> BookBase:
+    async def update_book(self, book_uid: str, metadata: BookUpload, cover: Optional[UploadFile] = None, publisher_id: Optional[int] = None) -> BookBase:
         existing_book = self.book_repo.get_book_by_uid(book_uid)
         if not existing_book:
             raise HTTPException(status_code=404, detail="Book not found")
         
         # Update title if provided
         if metadata.title and metadata.title.strip():
-            existing_book.title = metadata.title.strip()        
+            existing_book.title = metadata.title.strip() 
+        if publisher_id is not None:
+            existing_book.publisher_id = publisher_id
+       
         
         # Handle cover update if provided
         if cover and cover.filename:
