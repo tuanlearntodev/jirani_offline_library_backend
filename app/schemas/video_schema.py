@@ -12,6 +12,11 @@ class Video_View(BaseModel): # from server, to client
     description: Optional[str] = None
     video_url: str
 
+class Video_Delete(BaseModel): # from client, to server 
+    title: str
+    description: Optional[str] = None 
+    
+
     
 
 

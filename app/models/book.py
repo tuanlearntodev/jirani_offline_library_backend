@@ -8,7 +8,7 @@ class Book(Base):
     id = Column(Integer, primary_key=True, index=True)
     uid = Column(String(36), unique=True, index=True, nullable=False)
     title = Column(String, nullable=False)
-    publisher_id = Column(Integer, ForeignKey("publishers.id"), nullable=False)
+    publisher_id = Column(Integer, ForeignKey("publishers.id"), nullable=True)
     cover_path = Column(String, nullable=True)
     file_path = Column(String, nullable=False)
     file_type = Column(String, nullable=False)
