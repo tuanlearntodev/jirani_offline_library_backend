@@ -8,7 +8,6 @@ class BookBase(BaseModel):
     uid: str
     file_type: str
     extension: str
-    publisher_id: Optional[int] = None  
     tags: List[TagRead] = []    
     model_config = ConfigDict(from_attributes=True, str_strip_whitespace=True)
 
@@ -18,7 +17,6 @@ class BookCreate(BookBase):
     file_path: str 
     cover_path: Optional[str] = None
     tags: List[TagCreate] = []
-    publisher_id: Optional[int] = None
 
 class BookRead(BookBase):
     cover_path: Optional[str] = Field(None, exclude=True) # exclude=True hides the raw filename

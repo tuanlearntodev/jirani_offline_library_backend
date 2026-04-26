@@ -4,7 +4,7 @@
 from .auth_schema import LoginRequest, SignUpRequest, Token, RoleSchema, UserWithRoles
 from .book_schema import BookBase, BookCreate, BookRead, BookDetail, BookUpload
 from .tag_schema import TagBase, TagRead, TagCreate
-from .publisher_schema import PublisherBase, PublisherRead, PublisherCreate
+
 
 __all__ = [
     # Auth schemas
@@ -23,8 +23,5 @@ __all__ = [
     "TagBase",
     "TagRead",
     "TagCreate",
-    # Publisher schemas
-    "PublisherBase",
-    "PublisherRead",
-    "PublisherCreate",
+
 ]

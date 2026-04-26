@@ -1,29 +1,49 @@
-from fastapi import APIRouter, Depends, File, UploadFile, Form, HTTPException, Query
-from fastapi.responses import FileResponse
+from pathlib import Path
+from typing import Iterator, Optional
+
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
-from typing import Optional
-import json
-from fastapi.responses import FileResponse
 
 from app.database import get_db
+from app import settings
 from app.services.book_service import BookService
 from app.repositories.book_repo import BookRepo
 from app.schemas import BookUpload, BookBase
 from app.schemas.tag_schema import TagCreate
 
 router = APIRouter(prefix="/books", tags=["books"])
+BOOK_STREAM_CHUNK_SIZE = 1024 * 256  # 256KB
 
 def get_book_service(db: Session = Depends(get_db)) -> BookService:
     book_repo = BookRepo(db)
     return BookService(book_repo)
 
-from fastapi.responses import FileResponse
+
+def _get_book_file_path(db: Session, book_uid: str) -> Path:
+    book = BookRepo(db).get_book_by_uid(book_uid)
+    if not book:
+        raise HTTPException(status_code=404, detail="Book not found")
+
+    if book.extension.lower() not in settings.ALLOWED_EXTENSIONS:
+        raise HTTPException(status_code=400, detail="Unsupported book format")
+
+    file_path = settings.UPLOAD_DIR / book.file_path
+    if not file_path.exists() or not file_path.is_file():
+        raise HTTPException(status_code=404, detail=f"File not found at {file_path}")
+
+    return file_path
+
+
+def _iter_file_chunks(file_path: Path, chunk_size: int = BOOK_STREAM_CHUNK_SIZE) -> Iterator[bytes]:
+    with file_path.open("rb") as stream:
+        while chunk := stream.read(chunk_size):
+            yield chunk
 
 @router.post("/upload", response_model=BookBase)
 async def upload_new_book(
     title: Optional[str] = Form(None),
-    tags: str = Form(""),          # ← was "[]", now empty string
-    publisher_id: Optional[int] = Form(None),   # ← add this
+    tags: str = Form(""),
     file: UploadFile = File(...),
     book_service: BookService = Depends(get_book_service)
 ):
@@ -35,7 +55,10 @@ async def upload_new_book(
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Invalid tags format: {str(e)}")
 
-    return await book_service.upload_book(metadata, file, publisher_id)
+    return await book_service.upload_book(
+        metadata=metadata,
+        file=file,
+    )
 
 @router.get("/search/", response_model=list[BookBase])
 async def search_books(
@@ -61,26 +84,28 @@ async def search_books(
         extension=extension
     )
 
-@router.get("/{book_uid}/read")
-async def read_book(
+@router.get("/{book_uid}/stream")
+async def stream_book(
     book_uid: str,
     db: Session = Depends(get_db)
 ):
-    from app.repositories.book_repo import BookRepo
-    from app import settings
+    file_path = _get_book_file_path(db, book_uid)
+    extension = file_path.suffix.lower().lstrip(".")
 
-    book = BookRepo(db).get_book_by_uid(book_uid)
-    if not book:
-        raise HTTPException(status_code=404, detail="Book not found")
+    media_types = {
+        "pdf": "application/pdf",
+        "epub": "application/epub+zip",
+    }
+    media_type = media_types.get(extension, "application/octet-stream")
 
-    file_path = settings.UPLOAD_DIR / book.file_path
-    print(f"DEBUG: looking for file at {file_path}")
-    print(f"DEBUG: exists = {file_path.exists()}")
-
-    if not file_path.exists():
-        raise HTTPException(status_code=404, detail=f"File not found at {file_path}")
-
-    return FileResponse(path=file_path, media_type="application/pdf")
+    return StreamingResponse(
+        _iter_file_chunks(file_path),
+        media_type=media_type,
+        headers={
+            "Content-Disposition": f'inline; filename="{file_path.name}"',
+            "Content-Length": str(file_path.stat().st_size),
+        },
+    )
 
 @router.get("/{book_uid}", response_model=BookBase)
 async def get_book_details(
@@ -97,8 +122,8 @@ async def get_book_details(
 async def update_book(
     book_uid: str,
     title: Optional[str] = Form(None),
-    tags: str = Form("[]"),  
-     publisher_id: Optional[int] = Form(None),
+    tags: str = Form("[]"),
+    cover: Optional[UploadFile] = File(None),
     book_service: BookService = Depends(get_book_service)
 ):
     """Teacher endpoint to update book metadata and optional cover."""
@@ -113,7 +138,7 @@ async def update_book(
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Invalid tags format: {str(e)}")
 
-    return await book_service.update_book(book_uid, metadata, cover, publisher_id)
+    return await book_service.update_book(book_uid, metadata, cover)
 
 @router.delete("/{book_uid}", status_code=204)
 async def delete_book(
@@ -126,6 +151,7 @@ async def delete_book(
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     return
+
 
 
 

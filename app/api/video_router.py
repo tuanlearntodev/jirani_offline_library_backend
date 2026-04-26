@@ -8,8 +8,10 @@ from fastapi.responses import StreamingResponse
 from app.database import get_db
 import uuid
 import asyncio
+from pathlib import Path
 
 router = APIRouter(prefix="/videos", tags=["videos"])
+VIDS_DIR = Path("uploads") / "vids"
 
 @router.get("/", response_model=list[Video_View])
 def get_videos(db: Session = Depends(get_db)):
@@ -37,16 +39,15 @@ async def upload_file(
     description: str | None = Form(None),
     db: Session = Depends(get_db)
 ):
-    upload_directory = "uploads"
-    os.makedirs(upload_directory, exist_ok=True)
-    file_location = f"{upload_directory}/{uuid.uuid4()}_{file.filename}"
+    VIDS_DIR.mkdir(parents=True, exist_ok=True)
+    file_location = VIDS_DIR / f"{uuid.uuid4()}_{file.filename}"
     with open(file_location, "wb") as f:
         shutil.copyfileobj(file.file, f)
 
     video = Video_Create(
         title=title,
         description=description,
-        file_path=file_location
+        file_path=str(file_location)
     )
 
     repo = Video_Repo(db)  # ← this line was missing
@@ -64,18 +65,17 @@ async def upload_multiple(
     files: list[UploadFile] = File(...),
     db: Session = Depends(get_db)
 ):
-    upload_directory = "uploads"
-    os.makedirs(upload_directory, exist_ok=True)
+    VIDS_DIR.mkdir(parents=True, exist_ok=True)
     repo = Video_Repo(db)
 
     async def save_single_file(file):
-        file_location = f"{upload_directory}/{uuid.uuid4()}_{file.filename}"
+        file_location = VIDS_DIR / f"{uuid.uuid4()}_{file.filename}"
         with open(file_location, "wb") as f:
             shutil.copyfileobj(file.file, f)
         video = Video_Create(
             title=file.filename.rsplit(".", 1)[0],  # strip extension
             description=None,
-            file_path=file_location
+            file_path=str(file_location)
         )
         video_db = repo.create_video(video)
         return Video_View(

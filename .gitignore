@@ -38,5 +38,7 @@ Thumbs.db
 # Uploads - ignore contents but keep folder structure
 uploads/books/*
 uploads/covers/*
+uploads/vids/*
 !uploads/books/.gitkeep
 !uploads/covers/.gitkeep
+!uploads/vids/.gitkeep
