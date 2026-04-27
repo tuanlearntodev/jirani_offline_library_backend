@@ -8,7 +8,7 @@ from app import settings
 from app.schemas import BookDetail, BookRead, BookCreate, BookUpload, BookBase, TagCreate
 import re
 import fitz  # PyMuPDF
-
+import asyncio
 
 class BookService:
     def __init__(self, book_repo: BookRepo):
@@ -27,6 +27,8 @@ class BookService:
         if not book:
             return None
         return BookDetail.model_validate(book)
+    
+    
     
     def get_all_books(self) -> list[BookRead]:
         books = self.book_repo.get_all_books()
@@ -58,6 +60,21 @@ class BookService:
         clean_title = re.sub(r'[-\s]+', '_', clean_title)
         
         return f"{clean_title}_{uid}.{extension}"
+    def _convert_epub_to_pdf(self, epub_path: Path, pdf_path: Path) -> bool:
+        try:
+            doc = fitz.open(str(epub_path))
+            # convert_to_pdf() returns bytes of a PDF
+            pdf_bytes = doc.convert_to_pdf()
+            doc.close()
+            
+            with open(str(pdf_path), "wb") as f:
+                f.write(pdf_bytes)
+            
+            print(f"EPUB converted to PDF: {pdf_path.exists()}")
+            return True
+        except Exception as e:
+            print(f"EPUB to PDF failed: {e}")
+            return False
     
     async def upload_book(self, metadata: BookUpload, file: UploadFile, cover: Optional[UploadFile] = None) -> BookBase:
         """Upload book and cover with validation and error handling"""
@@ -101,6 +118,7 @@ class BookService:
         saved_cover_path = None
         
         try:
+            print("1. starting file save")
             # Save book file while checking size
             total_size = len(file_header)
             with file_path.open("wb") as buffer:
@@ -121,9 +139,11 @@ class BookService:
                     buffer.write(chunk)
             
             saved_file_path = file_path
-            
+            print("2. file saved")
+
             # Handle cover upload if provided
             if cover and cover.filename:
+                print("3a manual cover branch")
                 # Validate cover extension
                 if '.' not in cover.filename:
                     raise HTTPException(status_code=400, detail="Cover file must have an extension")
@@ -169,10 +189,17 @@ class BookService:
             else: 
                 cover_name = f"{book_uid}.jpg"
                 gen_cover_path = self.cover_path / cover_name
-                
-                # Use our helper to extract from the file we just saved to disk
-                self._generate_thumbnail(file_path, gen_cover_path, file_extension)
+                await asyncio.get_event_loop().run_in_executor(
+                    None, self._generate_thumbnail, file_path, gen_cover_path, file_extension
+                )
                 saved_cover_path = gen_cover_path
+
+                if file_extension == "epub":
+                    pdf_name = file_name.replace(".epub", ".pdf")
+                    pdf_path = self.upload_path / pdf_name
+                    await asyncio.get_event_loop().run_in_executor(
+                        None, self._convert_epub_to_pdf, file_path, pdf_path
+                    )
             
             extracted_tags = []
             if file_extension == "epub":
@@ -368,42 +395,159 @@ class BookService:
             )
             
     def _generate_thumbnail(self, book_path: Path, output_path: Path, extension: str) -> bool:
-        """Extracts cover: PDF uses first page, EPUB uses embedded metadata image."""
+        print(f"THUMBNAIL INPUT: {book_path} | exists={book_path.exists()}")
+        print(f"THUMBNAIL OUTPUT: {output_path}")
         try:
             doc = fitz.open(str(book_path))
-            
+
             if extension == "pdf":
-                # PDFs don't have 'metadata images', so we render the first page
                 page = doc.load_page(0)
-                print("Generating thumbnail for PDF")
                 pix = page.get_pixmap(matrix=fitz.Matrix(0.5, 0.5))
                 pix.save(str(output_path))
                 doc.close()
+                print(f"THUMBNAIL SAVED: {output_path.exists()}")
                 return True
-                
             elif extension == "epub":
-                # Get the embedded cover image from EPUB metadata
-                image_tuple = doc.get_cover_image()
-                
-                if image_tuple:
-                    img_bytes, _ = image_tuple # Unpack the bytes
+                doc.close()
+                import zipfile
+                import xml.etree.ElementTree as ET
+                import re as _re
+
+                def strip_ns(tag):
+                    return tag.split("}")[-1].lower() if "}" in tag else tag.lower()
+
+                cover_bytes = None
+
+                with zipfile.ZipFile(str(book_path), 'r') as z:
+                    names = z.namelist()
+
+                    opf_path = None
+                    if "META-INF/container.xml" in names:
+                        container = ET.fromstring(z.read("META-INF/container.xml"))
+                        for elem in container.iter():
+                            if strip_ns(elem.tag) == "rootfile":
+                                opf_path = elem.get("full-path")
+                                break
+
+                    if opf_path and opf_path in names:
+                        opf_dir = "/".join(opf_path.split("/")[:-1])
+                        opf = ET.fromstring(z.read(opf_path))
+
+                        cover_id = None
+                        cover_href = None
+
+                        for meta in opf.iter():
+                            if strip_ns(meta.tag) == "meta":
+                                if meta.get("name", "").lower() == "cover":
+                                    cover_id = meta.get("content")
+                                    break
+
+                        for item in opf.iter():
+                            if strip_ns(item.tag) == "item":
+                                if "cover-image" in item.get("properties", ""):
+                                    cover_href = item.get("href")
+                                    print(f"DEBUG: found via properties=cover-image: {cover_href}")
+                                    break
+                                if cover_id and item.get("id") == cover_id:
+                                    cover_href = item.get("href")
+                                    print(f"DEBUG: found via cover_id match: {cover_href}")
+                                    break
+
+                        if cover_href:
+                            full_cover_path = f"{opf_dir}/{cover_href}".replace("\\", "/")
+                            print(f"DEBUG: full_cover_path: {full_cover_path}, in names: {full_cover_path in names}")
+
+                            if full_cover_path in names:
+                                content = z.read(full_cover_path)
+                                if full_cover_path.endswith(('.xhtml', '.html', '.htm')):
+                                    match = _re.search(rb'<img[^>]+src=["\']([^"\']+)["\']', content, _re.IGNORECASE)
+                                    if match:
+                                        img_src = match.group(1).decode()
+                                        xhtml_dir = "/".join(full_cover_path.split("/")[:-1])
+                                        img_path = f"{xhtml_dir}/{img_src}".replace("\\", "/")
+                                        parts = img_path.split("/")
+                                        resolved = []
+                                        for p in parts:
+                                            if p == "..":
+                                                if resolved:
+                                                    resolved.pop()
+                                            else:
+                                                resolved.append(p)
+                                        img_path = "/".join(resolved)
+                                        if img_path in names:
+                                            cover_bytes = z.read(img_path)
+                                            print(f"DEBUG: found cover via xhtml img: {img_path}")
+                                else:
+                                    cover_bytes = content
+                                    print(f"DEBUG: found cover via manifest direct image: {full_cover_path}")
+
+                        if not cover_bytes:
+                            for ref in opf.iter():
+                                if strip_ns(ref.tag) == "reference":
+                                    if ref.get("type", "").lower() == "cover":
+                                        guide_href = ref.get("href", "")
+                                        full_path = f"{opf_dir}/{guide_href}".replace("\\", "/")
+                                        if full_path in names:
+                                            content = z.read(full_path)
+                                            if full_path.endswith(('.xhtml', '.html', '.htm')):
+                                                match = _re.search(rb'<img[^>]+src=["\']([^"\']+)["\']', content, _re.IGNORECASE)
+                                                if match:
+                                                    img_src = match.group(1).decode()
+                                                    xhtml_dir = "/".join(full_path.split("/")[:-1])
+                                                    img_path = f"{xhtml_dir}/{img_src}".replace("\\", "/")
+                                                    parts = img_path.split("/")
+                                                    resolved = []
+                                                    for p in parts:
+                                                        if p == "..":
+                                                            if resolved:
+                                                                resolved.pop()
+                                                        else:
+                                                            resolved.append(p)
+                                                    img_path = "/".join(resolved)
+                                                    if img_path in names:
+                                                        cover_bytes = z.read(img_path)
+                                                        print(f"DEBUG: found cover via guide xhtml: {img_path}")
+                                        break
+
+                    # Fallback: cover in filename
+                    if not cover_bytes:
+                        for name in names:
+                            lower = name.lower()
+                            if any(lower.endswith(ext) for ext in ['.jpg', '.jpeg', '.png']):
+                                if any(k in lower for k in ['cover', 'front', 'thumb']):
+                                    cover_bytes = z.read(name)
+                                    print(f"DEBUG: found cover by filename: {name}")
+                                    break
+
+                    # Fallback: first image
+                    if not cover_bytes:
+                        for name in names:
+                            lower = name.lower()
+                            if any(lower.endswith(ext) for ext in ['.jpg', '.jpeg', '.png']):
+                                cover_bytes = z.read(name)
+                                print(f"DEBUG: using first image found: {name}")
+                                break
+
+                if cover_bytes:
                     with open(output_path, "wb") as f:
-                        f.write(img_bytes)
-                    doc.close()
+                        f.write(cover_bytes)
+                    print(f"DEBUG: cover saved: {output_path.exists()}")
                     return True
-                
-                # Fallback: if no metadata cover exists, render the first page
+
+                print("DEBUG: no image found, rendering first page")
+                doc = fitz.open(str(book_path))
                 page = doc.load_page(0)
                 pix = page.get_pixmap(matrix=fitz.Matrix(0.5, 0.5))
                 pix.save(str(output_path))
                 doc.close()
                 return True
-                
-            return False
+                        
+
         except Exception as e:
             print(f"Thumbnail extraction failed: {e}")
             return False
-        
+                            
+                
         
     def _extract_epub_tags(self, book_path: Path) -> list[str]:
         """Extracts subjects/tags from EPUB metadata."""
