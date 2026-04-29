@@ -1,10 +1,7 @@
-
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pathlib import Path
 from typing import Set
 
-
-# Get the base directory (project root)
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 class Settings(BaseSettings):
@@ -35,7 +32,12 @@ class Settings(BaseSettings):
     COVER_DIR: Path = BASE_DIR / "uploads" / "covers"
     MAX_UPLOAD_SIZE: int = 50 * 1024 * 1024  # 50MB
     MAX_COVER_SIZE: int = 5 * 1024 * 1024  # 5MB
-    
+
+    # Twilio
+    TWILIO_ACCOUNT_SID: str = ""
+    TWILIO_AUTH_TOKEN: str = ""
+    TWILIO_PHONE_NUMBER: str = ""
+
     @property
     def ALLOWED_EXTENSIONS(self) -> Set[str]:
         return {"pdf", "epub"}

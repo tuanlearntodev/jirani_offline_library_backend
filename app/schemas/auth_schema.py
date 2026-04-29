@@ -1,14 +1,16 @@
 from pydantic import BaseModel, Field
-from typing import List
+from typing import List, Optional
 
-# What user sends when logging in (username & password must be strings)
 class LoginRequest(BaseModel):
-    username: str 
+    username: str
     password: str
 
 class SignUpRequest(BaseModel):
-    username:str = Field(..., min_length = 4, max_length=50)
-    password: str = Field(..., min_length = 15)
+    username: str = Field(..., min_length=4, max_length=50)
+    password: str = Field(..., min_length=15)
+    first_name: str = Field(..., min_length=1, max_length=50)
+    last_name: str = Field(..., min_length=1, max_length=50)
+    phone_number: Optional[str] = None
 
 class ResetPasswordRequest(BaseModel):
     username: str
@@ -17,15 +19,17 @@ class ResetPasswordRequest(BaseModel):
 class ChangePasswordRequest(BaseModel):
     username: str
     new_password: str = Field(..., min_length=15)
-    
+    old_password: str
+
 class Token(BaseModel):
-    access_token: str  # returns jwt token
-    token_type: str = "bearer" #scheme for sending a token in HTTP requests
+    access_token: str
+    token_type: str = "bearer"
+    username: str
+    roles: List[str]
 
 class RoleSchema(BaseModel):
     id: int
     name: str
-    
     class Config:
         from_attributes = True
 
@@ -36,6 +40,5 @@ class UserWithRoles(BaseModel):
     last_name: str
     is_active: bool
     roles: List[RoleSchema]
-    
     class Config:
         from_attributes = True
