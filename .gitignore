@@ -1,44 +1,20 @@
-# Python-generated files
+# Byte-compiled / optimized / C extensions
 __pycache__/
-*.py[oc]
-build/
-dist/
-wheels/
-*.egg-info
+*.py[cod]
+*$py.class
 
-# Virtual environments
-.venv/
-venv/
-env/
-
-# Environment files (NEVER COMMIT)
+# Environments
 .env
-.env.local
-.env.*.local
+.venv
+env/
+venv/
+ENV/
 
-# Runtime data
-data/
-logs/
-*.log
-
-# IDE files
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# OS files
+# OS specific files
 .DS_Store
 Thumbs.db
 
-# Temporary files
-*.tmp
-*.temp
-
-# Uploads - ignore contents but keep folder structure
-uploads/books/*
-uploads/covers/*
-uploads/vids/*
-!uploads/books/.gitkeep
-!uploads/covers/.gitkeep
-!uploads/vids/.gitkeep
+# Project specific
+uploads/
+graphify-out/
+*.log

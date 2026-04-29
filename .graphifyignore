@@ -1,5 +1,11 @@
-# Byte-compiled / optimized / C extensions
+# Python bytecode
 __pycache__/
+*.py[cod]
+
+# Virtual environments
+.venv/
+env/
+venv/
 
 # Local environment variables
 .env
