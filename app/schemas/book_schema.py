@@ -8,18 +8,25 @@ class BookBase(BaseModel):
     uid: str
     file_type: str
     extension: str
-    tags: List[TagRead] = []    
+    tags: List[TagRead] = []
+    cover_path: Optional[str] = Field(None)    
     model_config = ConfigDict(from_attributes=True, str_strip_whitespace=True)
+
+    @computed_field
+    @property
+    def cover_url(self) -> Optional[str]:
+        if not self.cover_path:
+            return None
+        return f"/static/covers/{self.cover_path}"
 
 class BookCreate(BookBase):
     # These are only used internally by the Service/Repo 
     # after the file is saved to the disk.
     file_path: str 
-    cover_path: Optional[str] = None
     tags: List[TagCreate] = []
 
 class BookRead(BookBase):
-    cover_path: Optional[str] = Field(None, exclude=True) # exclude=True hides the raw filename
+    cover_path: Optional[str] = Field(None) 
     @computed_field
     @property
     def cover_url(self) -> Optional[str]:

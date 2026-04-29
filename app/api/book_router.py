@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Iterator, Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, FileResponse
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -47,6 +47,7 @@ async def upload_new_book(
     file: UploadFile = File(...),
     book_service: BookService = Depends(get_book_service)
 ):
+    print("router hit")
     try:
         tag_list = []
         if tags.strip():
@@ -82,6 +83,22 @@ async def search_books(
         tags=tag_list,
         file_type=file_type,
         extension=extension
+    )
+
+@router.get("/{book_uid}/epub")
+def serve_epub(book_uid: str, db: Session = Depends(get_db)):
+    book = BookRepo(db).get_book_by_uid(book_uid)
+    if not book:
+        raise HTTPException(status_code=404, detail="Book not found")
+    
+    file_path = settings.UPLOAD_DIR / book.file_path
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    return FileResponse(
+        path=str(file_path),
+        media_type="application/epub+zip",
+        headers={"Content-Disposition": f'inline; filename="{book.file_path}"'}
     )
 
 @router.get("/{book_uid}/stream")
@@ -152,6 +169,34 @@ async def delete_book(
         raise HTTPException(status_code=404, detail=str(e))
     return
 
+@router.get("/{book_uid}/read")
+def read_book(book_uid: str, db: Session = Depends(get_db)):
+    book = BookRepo(db).get_book_by_uid(book_uid)
+    if not book:
+        raise HTTPException(status_code=404, detail="Book not found")
+
+    if book.extension == "epub":
+        # Look for the converted PDF
+        pdf_name = book.file_path.rsplit(".", 1)[0] + ".pdf"
+        file_path = settings.UPLOAD_DIR / pdf_name
+        if not file_path.exists():
+            raise HTTPException(status_code=404, detail=f"Converted PDF not found — try re-uploading the EPUB")
+    else:
+        file_path = settings.UPLOAD_DIR / book.file_path
+
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail=f"File not found at {file_path}")
+
+    def iterfile():
+        with open(file_path, "rb") as f:
+            while chunk := f.read(1024 * 1024):
+                yield chunk
+
+    return StreamingResponse(
+        iterfile(),
+        media_type="application/pdf",
+        headers={"Content-Disposition": "inline"}
+    )
 
 
 

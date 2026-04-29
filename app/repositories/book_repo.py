@@ -13,7 +13,7 @@ class BookRepo:
 
     def create_book(self, book_create: BookCreate) -> Book:
         tag_data = book_create.tags
-        book_dict = book_create.model_dump(exclude={"tags"})
+        book_dict = book_create.model_dump(exclude={"tags", "cover_url"})
         
         existing = self.db_session.query(Book).filter(Book.uid == book_create.uid).first()
         if existing:
@@ -53,7 +53,7 @@ class BookRepo:
             raise ValueError(f"Book with UID {book_uid} does not exist")
         
         tag_data = book_update.tags
-        book_dict = book_update.model_dump(exclude={"tags"})
+        book_dict = book_update.model_dump(exclude={"tags", "cover_url"})
         
         for key, value in book_dict.items():
             setattr(book, key, value)
