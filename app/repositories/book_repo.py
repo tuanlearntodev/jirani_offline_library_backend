@@ -40,12 +40,20 @@ class BookRepo:
     def get_all_books(self) -> list[Book]:
         return self.db_session.query(Book).options(joinedload(Book.tags)).all()
     
+    def cleanup_orphan_tags(self) -> None:
+        """Delete tags that are no longer attached to any book."""
+        orphans = self.db_session.query(Tag).filter(~Tag.books.any()).all()
+        for tag in orphans:
+            self.db_session.delete(tag)
+        self.db_session.commit()
+
     def delete_book(self, book_uid: str) -> None:
         book = self.get_book_by_uid(book_uid)
         if not book:
             raise ValueError(f"Book with UID {book_uid} does not exist")
         self.db_session.delete(book)
         self.db_session.commit()
+        self.cleanup_orphan_tags()
         
     def update_book(self, book_uid: str, book_update: BookCreate) -> Book:
         book = self.get_book_by_uid(book_uid)
@@ -69,6 +77,7 @@ class BookRepo:
         try:
             self.db_session.commit()
             self.db_session.refresh(book)
+            self.cleanup_orphan_tags()
             return book
         except Exception as e:
             self.db_session.rollback()

@@ -11,7 +11,6 @@ class Account(Base):
     first_name = Column(String, nullable=False)
     last_name = Column(String, nullable=False)
     is_active = Column(Boolean, default=True)
-
+    phone_number = Column(String, nullable=True)  
 
     roles = relationship("Role", secondary="account_roles", back_populates="accounts")
-

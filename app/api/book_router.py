@@ -139,7 +139,7 @@ async def get_book_details(
 async def update_book(
     book_uid: str,
     title: Optional[str] = Form(None),
-    tags: str = Form("[]"),
+    tags: str = Form(""),
     cover: Optional[UploadFile] = File(None),
     book_service: BookService = Depends(get_book_service)
 ):
