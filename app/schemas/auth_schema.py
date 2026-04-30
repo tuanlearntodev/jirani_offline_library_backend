@@ -10,7 +10,7 @@ class SignUpRequest(BaseModel):
     password: str = Field(..., min_length=15)
     first_name: str = Field(..., min_length=1, max_length=50)
     last_name: str = Field(..., min_length=1, max_length=50)
-    phone_number: Optional[str] = None
+   
 
 class ResetPasswordRequest(BaseModel):
     username: str
@@ -26,6 +26,7 @@ class Token(BaseModel):
     token_type: str = "bearer"
     username: str
     roles: List[str]
+    recovery_code: Optional[str] = None  
 
 class RoleSchema(BaseModel):
     id: int

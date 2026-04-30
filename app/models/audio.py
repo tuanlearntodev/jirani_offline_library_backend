@@ -1,5 +1,6 @@
 from app.database import Base
 from sqlalchemy import Column, String, Integer, DateTime
+from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
 
 class Audio(Base):
@@ -10,3 +11,4 @@ class Audio(Base):
     file_path = Column(String, nullable=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     deleted_at = Column(DateTime, nullable=True, default=None)
+    tags = relationship("Tag", secondary="audio_tags", back_populates="audio_tracks")
