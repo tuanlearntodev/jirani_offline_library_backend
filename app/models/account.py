@@ -1,6 +1,7 @@
-from app.database import Base 
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, func
+from sqlalchemy import Column, Integer, String, Boolean
 from sqlalchemy.orm import relationship
+from app.database import Base
+
 
 class Account(Base):
     __tablename__ = "accounts"
@@ -11,6 +12,10 @@ class Account(Base):
     first_name = Column(String, nullable=False)
     last_name = Column(String, nullable=False)
     is_active = Column(Boolean, default=True)
-    phone_number = Column(String, nullable=True)  
+    recovery_code_hash = Column(String, nullable=True)
 
-    roles = relationship("Role", secondary="account_roles", back_populates="accounts")
+    roles = relationship(
+        "Role",
+        secondary="account_roles", 
+        back_populates="accounts"
+    )

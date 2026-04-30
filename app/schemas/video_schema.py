@@ -1,22 +1,20 @@
-from pydantic import BaseModel, Field
-from typing import Optional, Literal
+from pydantic import BaseModel, ConfigDict
+from typing import Optional, List
+from app.schemas.tag_schema import TagRead, TagCreate
 
-class Video_Create(BaseModel): #  from client, to server
-    title: str 
-    description: Optional[str] = None # optional fields require default value, here it is none
+class Video_Create(BaseModel):
+    title: str
+    description: Optional[str] = None
     file_path: str
 
-class Video_View(BaseModel): # from server, to client
+class Video_View(BaseModel):
     id: int
     title: str
     description: Optional[str] = None
     video_url: str
+    tags: List[TagRead] = []
+    model_config = ConfigDict(from_attributes=True)
 
-class Video_Delete(BaseModel): # from client, to server 
+class Video_Delete(BaseModel):
     title: str
-    description: Optional[str] = None 
-    
-
-    
-
-
+    description: Optional[str] = None

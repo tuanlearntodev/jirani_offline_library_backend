@@ -31,7 +31,6 @@ class AuthService:
             hashed_password=hashed_password,
             first_name=signup_data.first_name,
             last_name=signup_data.last_name,
-            phone_number=signup_data.phone_number,
             is_active=True
         )
         db.add(new_account)
