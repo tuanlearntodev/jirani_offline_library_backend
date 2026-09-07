@@ -367,7 +367,7 @@ git commit -m "feat: author/level/genre entities — tag-pattern modules with ge
   - Tests (bodies yours — old plan Task 1 case list): empty→raise; `.exe`→raise; `b"not a real pdf"` named `.pdf`→raise; oversize via `monkeypatch.setattr(settings, "MAX_UPLOAD_SIZE", 10)`→raise; `b"%PDF-1.4..."` named `Report.PDF`→`"pdf"`; `b"PK\x03\x04..."`→`"epub"`. Red = `ModuleNotFoundError: app.services.book_errors`
   - Commit: `feat: add book domain errors and ContentValidator upload gate`
 
-- [ ] **Section B — `BookFileStorage`**
+- [x] **Section B — `BookFileStorage`**
   - Files: create `backend/app/services/book_file_storage.py`; test `backend/app/tests/media/test_book_storage.py`
   - Interfaces: `save(file_bytes, filename, uid) -> str` (relative single-component name under `UPLOAD_DIR`); `delete(rel_path) -> None`; `delete_cover(cover_name) -> None`; `resolve(rel_path) -> Path` raising `BookNotFound` on traversal (`is_relative_to` containment) or missing file; `cover_dir -> Path` property
   - Tests: 7 cases per old plan Task 2 (traversal raise, round-trip, hostile filename sanitization, silent deletes, cover_dir)
