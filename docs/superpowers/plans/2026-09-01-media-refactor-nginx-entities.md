@@ -379,15 +379,15 @@ git commit -m "feat: author/level/genre entities — tag-pattern modules with ge
   - Tests: 3 cases (corrupt→None, missing→None, minimal EPUB fixture→title/author)
   - Commit: `feat: add EpubMetadataReader leaf module with EPUB metadata tests`
 
-- [ ] **Section D — `CoverGenerator`**
+- [x] **Section D — `CoverGenerator`**
   - Files: create `backend/app/services/cover_generator.py`; test `backend/app/tests/media/test_book_cover.py`
   - Interfaces: `generate(source_path: Path, dest_dir: Path) -> bool` — dest is a **directory**, name is `{source_path.stem}.png`; PDF → page-0 render; EPUB → OPF-declared cover → XHTML `<img>` → first-image fallback; `False` on any failure, never raises; size-check against `settings.MAX_COVER_SIZE`
   - Tests: 5 cases (corrupt PDF→False; real PDF→True + file ≤ MAX; EPUB-with-cover→True; EPUB-no-images→False; MAX_COVER_SIZE=1 monkeypatch→False)
   - Commit: `feat: add CoverGenerator leaf module with cover generation tests`
 
-- [ ] **Section E: Full-suite smoke after all four sections** — `cd backend && uv run pytest -v`. Expected: everything green (`app/tests/auth/` + all new files).
+- [x] **Section E: Full-suite smoke after all four sections** — `cd backend && uv run pytest -v`. Expected: everything green (`app/tests/auth/` + all new files).
 
-- [ ] **Section F: Tick this task's box in the same commit** (if the plan file is committed with Section D, no separate commit needed — see Global Constraints).
+- [x] **Section F: Tick this task's box in the same commit** (if the plan file is committed with Section D, no separate commit needed — see Global Constraints).
 
 ---
 
