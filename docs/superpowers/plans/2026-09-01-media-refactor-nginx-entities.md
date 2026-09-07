@@ -373,7 +373,7 @@ git commit -m "feat: author/level/genre entities — tag-pattern modules with ge
   - Tests: 7 cases per old plan Task 2 (traversal raise, round-trip, hostile filename sanitization, silent deletes, cover_dir)
   - Commit: `feat: add BookFileStorage with UPLOAD_DIR traversal containment`
 
-- [ ] **Section C — `EpubMetadataReader`**
+- [x] **Section C — `EpubMetadataReader`**
   - Files: create `backend/app/services/epub_metadata_reader.py`; test `backend/app/tests/media/test_book_epub_reader.py`
   - Interfaces: `@dataclass(frozen=True) BookMetadata` — `title: str | None`, `author: str | None`, `language: str | None`, `tags: list[str]` (field named **`tags`**, not `subjects`); `EpubMetadataReader.read(path: Path) -> BookMetadata | None`, never raises. Import `pymupdf` (not `fitz` — mypy `--strict`), `# type: ignore[no-untyped-call]` at `pymupdf.open`
   - Tests: 3 cases (corrupt→None, missing→None, minimal EPUB fixture→title/author)
