@@ -361,7 +361,7 @@ git commit -m "feat: author/level/genre entities — tag-pattern modules with ge
 
 **Why (learning):** leaf-first, exactly as the old plan: nothing imports them yet, the tree stays green after every section, and a regression in Task 5 isolates to *wiring* rather than to a leaf. Contracts below are the old plan's verbatim; the only change is import form (`from app.config import settings`).
 
-- [ ] **Section A — `book_errors.py` + `ContentValidator`**
+- [x] **Section A — `book_errors.py` + `ContentValidator`**
   - Files: create `backend/app/services/book_errors.py`, `content_validator.py`; test `backend/app/tests/media/test_book_validator.py`
   - Interfaces: `BookError(Exception)` with `detail: str` defaulting from per-class `default_detail`; `BookNotFound`, `InvalidBookFile`, `BookAlreadyExists`, `CoverGenerationFailed`; `ContentValidator.validate(file_bytes: bytes, filename: str) -> str` returns lowercase extension, raises `InvalidBookFile` on empty bytes, oversized (>`settings.MAX_UPLOAD_SIZE`), disallowed extension (`settings.ALLOWED_EXTENSIONS`), or magic-byte mismatch (pdf: `b"%PDF-"`, epub: `b"PK\x03\x04"`)
   - Tests (bodies yours — old plan Task 1 case list): empty→raise; `.exe`→raise; `b"not a real pdf"` named `.pdf`→raise; oversize via `monkeypatch.setattr(settings, "MAX_UPLOAD_SIZE", 10)`→raise; `b"%PDF-1.4..."` named `Report.PDF`→`"pdf"`; `b"PK\x03\x04..."`→`"epub"`. Red = `ModuleNotFoundError: app.services.book_errors`
