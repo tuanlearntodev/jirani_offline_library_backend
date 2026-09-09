@@ -12,15 +12,32 @@ T = TypeVar("T")
 class BookBase(BaseModel):
     uid: str
     title: str
-    author: str | None = None
-    level: str | None = None
-    book_type: str | None = None
     language: str | None = None
     extension: str
     tags: list[TagRead] = []
     cover_path: str | None = None
     model_config = ConfigDict(from_attributes=True, str_strip_whitespace=True)
 
+
+
+
+class BookCreate(BookBase):
+    author: str | None = None
+    level: str | None = None
+    genre: str | None = None
+    file_path: str
+    cover_path: str | None = None
+    tags: list[TagCreate] = []
+
+
+class BookRead(BookBase):
+    id: int
+    author: str | None = Field(default=None, alias="author_name")
+    level: str | None = Field(default=None, alias="level_name")
+    genre: str | None = Field(default=None, alias="genre_name")
+    created_at: datetime
+    metadata_: dict[str, Any] = Field(default_factory=dict, alias="metadata_")
+    
     @computed_field
     @property
     def cover_url(self) -> str | None:
@@ -29,23 +46,11 @@ class BookBase(BaseModel):
         return f"/static/covers/{self.cover_path}"
 
 
-class BookCreate(BookBase):
-    file_path: str
-    cover_path: str | None = None
-    tags: list[TagCreate] = []
-
-
-class BookRead(BookBase):
-    id: int
-    created_at: datetime
-    metadata_: dict[str, Any] = Field(default_factory=dict, alias="metadata_")
-
-
 class BookUpdate(BaseModel):
     title: str | None = None
     author: str | None = None
     level: str | None = None
-    book_type: str | None = None
+    genre: str | None = None
     language: str | None = None
     tags: list[TagCreate] | None = None
     metadata_: dict[str, Any] | None = None
@@ -82,9 +87,10 @@ class BookUpload(BaseModel):
 
 
 class BookSearchCriteria(BaseModel):
-    q: str | None = None
+    title: str | None = None
+    author: str | None = None
     level: str | None = None
-    book_type: str | None = None
+    genre: str | None = None
     language: str | None = None
     tags: list[str] | None = None
     extension: str | None = None
