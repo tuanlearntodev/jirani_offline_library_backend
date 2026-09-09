@@ -3,7 +3,6 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 
 from app import models  # noqa: F401
 from app.api import (
@@ -51,9 +50,6 @@ settings.VIDEO_DIR.mkdir(parents=True, exist_ok=True)
 settings.DATA_DIR.mkdir(parents=True, exist_ok=True)
 # Mount covers directory for public access (books require auth)
 
-app.mount(
-    "/static/covers", StaticFiles(directory=str(settings.COVER_DIR)), name="covers"
-)
 
 app.include_router(auth_router.router)
 app.include_router(book_router.router)

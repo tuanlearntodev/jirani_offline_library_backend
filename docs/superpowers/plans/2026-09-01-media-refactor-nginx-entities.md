@@ -966,17 +966,17 @@ volumes:
 
 **Why (learning):** three lessons. (1) **The `internal` directive is the security boundary.** A public `/media/` location would let anyone browse files directly and leak the naming scheme; `internal` means the only path to media is through a backend endpoint that already ran `RoleChecker` + `resolve()` containment. (2) **`alias` maps URI to filesystem; `proxy_pass` maps URI to upstream** — the two are not interchangeable, and a wrong `alias` is a silent content-leak. The `/media/` alias pairs with redirect URIs the backend builds from `media_path.name` only (a basename, already containment-checked) — the one-internal-location shape is spec §3. (3) **Streaming auth is layer-split.** FastAPI owns the decision (auth, row lookup, containment, 404), nginx owns the bytes (sendfile, Range). The 204 response's headers are the interface between the two — that is why the unit tests pin the header contract exactly.
 
-- [ ] **Step 1: Add `nginx/nginx.conf`** (above).
+- [x] **Step 1: Add `nginx/nginx.conf`** (above).
 
-- [ ] **Step 2: Update `docker-compose.yml`** (above — remove `ports: ["8000:8000"]` under backend, add the nginx service).
+- [x] **Step 2: Update `docker-compose.yml`** (above — remove `ports: ["8000:8000"]` under backend, add the nginx service).
 
-- [ ] **Step 3: Remove the StaticFiles mount in `main.py`** — delete the `app.mount("/static/covers", ...)` block and the now-unused `StaticFiles` import (ruff F401 will flag it). Keep the five `settings.*_DIR.mkdir` lines — the app still writes there.
+- [x] **Step 3: Remove the StaticFiles mount in `main.py`** — delete the `app.mount("/static/covers", ...)` block and the now-unused `StaticFiles` import (ruff F401 will flag it). Keep the five `settings.*_DIR.mkdir` lines — the app still writes there.
 
-- [ ] **Step 4: API smoke through nginx** — `docker compose up -d --build`, then:
+- [x] **Step 4: API smoke through nginx** — `docker compose up -d --build`, then:
 
 ```bash
 curl -s http://localhost/ | grep -q "Welcome" && echo "root OK"
-curl -s http://localhost/api/auth/login -X POST -H "Content-Type: application/json" \
+curl -s http://localhost/api/auth/token -X POST -H "Content-Type: application/json" \
   -d '{"username":"admin","password":"<your admin password>"}' > /tmp/login.json
 TOKEN=$(python3 -c "import json,sys; print(json.load(open('/tmp/login.json'))['access_token'])")
 ```
@@ -994,9 +994,9 @@ curl -s -D - -o /dev/null -H "Authorization: Bearer $TOKEN" \
 
 > Note for local dev without docker (plain `uv run uvicorn`): the 204+X-Accel endpoint has no nginx to serve the file, so media is unreachable — that is expected and per-spec. Local media testing goes through the compose stack; local *API* testing is unaffected (TestClient works without nginx).
 
-- [ ] **Step 6: Format, lint, type** — `cd backend && uv run ruff format app/main.py && uv run ruff check app/main.py --ignore B008 && uv run mypy app/main.py --strict`. Expected: 0/0. Then `uv run pytest -v` — full suite green (nothing about nginx touches the tests).
+- [x] **Step 6: Format, lint, type** — `cd backend && uv run ruff format app/main.py && uv run ruff check app/main.py --ignore B008 && uv run mypy app/main.py --strict`. Expected: 0/0. Then `uv run pytest -v` — full suite green (nothing about nginx touches the tests).
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add nginx/nginx.conf docker-compose.yml backend/app/main.py
